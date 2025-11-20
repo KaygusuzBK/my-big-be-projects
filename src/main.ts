@@ -1,8 +1,9 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, BadRequestException } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -12,13 +13,31 @@ async function bootstrap() {
     whitelist: true,
     forbidNonWhitelisted: true,
     transform: true,
+    exceptionFactory: (errors) => {
+      const messages = errors.map((error) => {
+        return Object.values(error.constraints || {}).join(', ');
+      });
+      return new BadRequestException({
+        statusCode: 400,
+        message: messages.length > 0 ? messages : ['Validation hatası'],
+        error: 'Bad Request',
+      });
+    },
   }));
 
   // Global exception filter
   app.useGlobalFilters(new HttpExceptionFilter());
 
-  // CORS
-  app.enableCors();
+  // Global logging interceptor
+  app.useGlobalInterceptors(new LoggingInterceptor());
+
+  // CORS - Detaylı yapılandırma
+  app.enableCors({
+    origin: true, // Tüm origin'lere izin ver (production'da spesifik origin kullan)
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+  });
 
   // Swagger configuration
   const config = new DocumentBuilder()

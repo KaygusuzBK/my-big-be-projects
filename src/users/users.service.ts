@@ -18,7 +18,7 @@ export class UsersService {
         });
 
         if (existingUser) {
-            throw new ConflictException('Email already exists');
+            throw new ConflictException('Bu email adresi zaten kullanılıyor');
         }
 
         const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
@@ -38,7 +38,7 @@ export class UsersService {
     async findById(id: string): Promise<User> {
         const user = await this.usersRepository.findOne({ where: { id } });
         if (!user) {
-            throw new NotFoundException('User not found');
+            throw new NotFoundException('Kullanıcı bulunamadı');
         }
         return user;
     }

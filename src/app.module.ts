@@ -5,7 +5,11 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { PostsModule } from './posts/posts.module';
+import { CategoriesModule } from './categories/categories.module';
 import { User } from './users/entities/user.entity';
+import { Post } from './posts/entities/post.entity';
+import { Category } from './categories/entities/category.entity';
 
 @Module({
   imports: [
@@ -21,7 +25,7 @@ import { User } from './users/entities/user.entity';
         username: configService.get('DB_USERNAME'),
         password: configService.get('DB_PASSWORD'),
         database: configService.get('DB_DATABASE'),
-        entities: [User],
+        entities: [User, Post, Category],
         synchronize: true, // Production'da false olmalı!
         logging: true,
         retryAttempts: 10,
@@ -31,6 +35,8 @@ import { User } from './users/entities/user.entity';
     }),
     AuthModule,
     UsersModule,
+    PostsModule,
+    CategoriesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
