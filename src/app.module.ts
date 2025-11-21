@@ -18,19 +18,45 @@ import { Category } from './categories/entities/category.entity';
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        host: configService.get('DB_HOST'),
-        port: configService.get('DB_PORT'),
-        username: configService.get('DB_USERNAME'),
-        password: configService.get('DB_PASSWORD'),
-        database: configService.get('DB_DATABASE'),
-        entities: [User, Post, Category],
-        synchronize: true, // Production'da false olmalı!
-        logging: true,
-        retryAttempts: 10,
-        retryDelay: 3000,
-      }),
+      useFactory: (configService: ConfigService) => {
+        const isProduction = configService.get('NODE_ENV') === 'production';
+        const databaseUrl = configService.get('DATABASE_URL');
+        
+        // DATABASE_URL varsa parse et (Vercel Postgres için)
+        if (databaseUrl) {
+          const url = new URL(databaseUrl);
+          return {
+            type: 'postgres',
+            host: url.hostname,
+            port: parseInt(url.port) || 5432,
+            username: url.username,
+            password: url.password,
+            database: url.pathname.slice(1),
+            entities: [User, Post, Category],
+            synchronize: !isProduction, // Production'da false olmalı!
+            logging: !isProduction,
+            ssl: isProduction ? { rejectUnauthorized: false } : false,
+            retryAttempts: 10,
+            retryDelay: 3000,
+          };
+        }
+        
+        // Ayrı ayrı environment variable'lar
+        return {
+          type: 'postgres',
+          host: configService.get('DB_HOST'),
+          port: configService.get('DB_PORT'),
+          username: configService.get('DB_USERNAME'),
+          password: configService.get('DB_PASSWORD'),
+          database: configService.get('DB_DATABASE'),
+          entities: [User, Post, Category],
+          synchronize: !isProduction, // Production'da false olmalı!
+          logging: !isProduction,
+          ssl: isProduction ? { rejectUnauthorized: false } : false,
+          retryAttempts: 10,
+          retryDelay: 3000,
+        };
+      },
       inject: [ConfigService],
     }),
     AuthModule,
